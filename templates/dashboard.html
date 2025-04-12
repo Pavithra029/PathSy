@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title | default('Dashboard') }} - Pathsy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        /* --- Theme Variables (RCB Theme) --- */
+        :root {
+            --bg-primary: #ffffff; --bg-secondary: #f5f5f5; --bg-accent: #111111;
+            --text-primary: #111111; --text-secondary: #555555; --text-sidebar: #f0f0f0;
+            --text-sidebar-muted: #cccccc; --accent-red: #D81B27; --accent-gold: #FFC72C;
+            --accent-black: #111111; --shadow-color: rgba(0, 0, 0, 0.1);
+            --shadow-color-glow: rgba(255, 199, 44, 0.1); --success-color: #28a745;
+            --error-color: #dc3545; --info-color: #17a2b8; --warning-color: #ffc107;
+            --border-color: #e0e0e0; --sidebar-width: 250px;
+            --header-height: 60px; --card-bg: #ffffff; --nav-item-hover-bg: rgba(255, 199, 44, 0.1);
+            --nav-item-active-bg: rgba(255, 199, 44, 0.15);
+            --theme-toggle-color-light: var(--accent-gold);
+            --theme-toggle-hover-light: var(--accent-red);
+            --theme-toggle-color-dark: var(--accent-red);
+            --theme-toggle-hover-dark: var(--accent-gold);
+            --flash-bg-error: rgba(220, 53, 69, 0.1); --flash-border-error: var(--error-color);
+            --flash-bg-success: rgba(40, 167, 69, 0.1); --flash-border-success: var(--success-color);
+            --flash-bg-info: rgba(23, 162, 184, 0.1); --flash-border-info: var(--info-color);
+            --flash-bg-warning: rgba(255, 193, 7, 0.1); --flash-border-warning: var(--warning-color);
+        }
+        body.dark-mode {
+            --bg-primary: #111111; --bg-secondary: #1a1a1a; --bg-accent: #000000;
+            --text-primary: #f0f0f0; --text-secondary: #cccccc; --text-sidebar: #f0f0f0;
+            --text-sidebar-muted: #aaaaaa; --accent-red: #ff4d4d; --accent-gold: #FFD700;
+            --accent-black: #111111; --shadow-color: rgba(0, 0, 0, 0.3);
+            --shadow-color-glow: rgba(255, 77, 77, 0.2); --border-color: #444444;
+            --card-bg: #1a1a1a; --nav-item-hover-bg: rgba(255, 215, 0, 0.1);
+            --nav-item-active-bg: rgba(255, 215, 0, 0.2);
+            --theme-toggle-color-dark: var(--accent-red);
+            --theme-toggle-hover-dark: var(--accent-gold);
+            --flash-bg-error: rgba(255, 77, 77, 0.15);
+            --flash-bg-success: rgba(40, 167, 69, 0.15);
+            --flash-bg-info: rgba(23, 162, 184, 0.15);
+            --flash-bg-warning: rgba(255, 193, 7, 0.15);
+        }
+        /* --- Global Styles --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; line-height: 1.6; background-color: var(--bg-secondary); color: var(--text-primary); transition: background-color 0.3s ease, color 0.3s ease; overflow-x: hidden; min-height: 100vh; }
+        h1, h2, h3, h4, h5, h6 { font-weight: 600; line-height: 1.3; color: var(--text-primary); transition: color 0.3s ease; }
+        a { text-decoration: none; color: var(--accent-red); transition: color 0.3s ease; }
+         body.dark-mode a { color: var(--accent-gold);}
+         a:hover { color: var(--accent-gold); }
+         body.dark-mode a:hover { color: var(--accent-red);}
+        p { margin-bottom: 1em; color: var(--text-secondary); transition: color 0.3s ease; }
+        .btn { display: inline-block; padding: 10px 20px; border-radius: 25px; font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease; cursor: pointer; border: none; box-shadow: 0 4px 10px var(--shadow-color); text-align: center; }
+        .btn-primary { background-color: var(--accent-gold); color: var(--accent-black); }
+        .btn-primary:hover { background-color: #e6b325; transform: translateY(-2px); }
+        .btn-secondary { background-color: var(--accent-red); color: white; }
+        .btn-secondary:hover { background-color: #c01822; transform: translateY(-2px); }
+        .btn-sm { padding: 5px 12px; font-size: 0.85em; }
+
+        /* --- Layout --- */
+        .app-container { display: flex; min-height: 100vh; }
+
+        /* --- Sidebar --- */
+        .sidebar { width: var(--sidebar-width); background-color: var(--bg-accent); color: var(--text-sidebar); position: fixed; height: 100vh; overflow-y: auto; transition: all 0.3s ease, background-color 0.3s ease, color 0.3s ease; z-index: 100; box-shadow: 2px 0 10px var(--shadow-color); display: flex; flex-direction: column; }
+        .sidebar-header {
+            display: flex; /* Enable flexbox */
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+            gap: 10px; /* Space between elements */
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+         /* Logo styling */
+         .rcb-logo { 
+            width: 50px; /* Control the size */
+            height: 50px;
+            border-radius: 50%; /* Make it circular */
+            object-fit: cover; /* Ensure image fills the circle */
+            border: 2px solid var(--accent-gold); /* Add gold border */
+            vertical-align: middle;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Subtle shadow */
+         }
+         /* Icon container */
+         .sidebar-logo-icon {
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             line-height: 1;
+         }
+         .sidebar-logo-text {
+             font-size: 1.6em;
+             font-weight: 700;
+             color: var(--accent-gold); /* Gold text */
+             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+             line-height: 1;
+         }
+        .sidebar-nav { padding: 20px 0; flex-grow: 1; }
+        .nav-item { padding: 12px 20px; display: flex; align-items: center; cursor: pointer; transition: background-color 0.2s ease, border-color 0.2s ease; border-left: 4px solid transparent; color: inherit; }
+        .nav-item:hover { background-color: var(--nav-item-hover-bg); border-left-color: var(--accent-gold); }
+        .nav-item.active { background-color: var(--nav-item-active-bg); border-left-color: var(--accent-gold); }
+        .nav-item i { margin-right: 12px; width: 20px; text-align: center; color: var(--accent-gold); font-size: 1.1em; }
+        .nav-item span { color: var(--text-sidebar-muted); transition: color 0.2s ease; font-weight: 500; }
+        .nav-item:hover span { color: var(--text-sidebar); }
+        .nav-item.active span { color: var(--accent-gold); font-weight: 600; }
+        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border-color); flex-shrink: 0; background-color: var(--bg-accent); }
+        .user-info { display: flex; align-items: center; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--accent-red); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; margin-right: 10px; font-size: 0.9em; text-transform: uppercase; }
+        .user-details { flex: 1; overflow: hidden; /* Prevent long names breaking layout */}
+        .user-name { font-weight: 500; color: var(--text-sidebar); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* Handle long names */
+        .user-role { font-size: 0.8em; color: var(--text-sidebar-muted); }
+        .logout-btn { margin-top: 15px; width: 100%; display: flex; justify-content: center; align-items: center; }
+        .logout-btn i { margin-right: 8px;}
+
+        /* --- Main Content --- */
+        .main-content { flex: 1; margin-left: var(--sidebar-width); transition: margin-left 0.3s ease; }
+        .header { height: var(--header-height); background-color: var(--bg-primary); box-shadow: 0 2px 10px var(--shadow-color); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; position: sticky; top: 0; z-index: 50; transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+        .header-title { font-size: 1.4em; font-weight: 600; color: var(--text-primary); }
+        .header-actions { display: flex; align-items: center; }
+        .header-actions > * { margin-left: 20px; }
+        .notification-icon { position: relative; cursor: pointer; color: var(--text-secondary); font-size: 1.2em; transition: color 0.3s ease; }
+        .notification-icon:hover { color: var(--text-primary); }
+        .notification-badge { position: absolute; top: -5px; right: -8px; width: 18px; height: 18px; background-color: var(--accent-red); color: white; border-radius: 50%; font-size: 0.7em; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+        /* Theme Toggle Button (Emoji Only in Header) */
+        .theme-toggle { background: none; border: none; color: var(--theme-toggle-color-light); width: auto; height: auto; padding: 0; border-radius: 0; cursor: pointer; transition: color 0.3s ease; display: flex; align-items: center; justify-content: center; font-size: 1.5em; }
+        .theme-toggle:hover { background: none; color: var(--theme-toggle-hover-light); }
+        body.dark-mode .theme-toggle { color: var(--theme-toggle-color-dark); }
+        body.dark-mode .theme-toggle:hover { background: none; color: var(--theme-toggle-hover-dark); }
+
+        .content { padding: 30px; }
+
+         /* --- Flashed Messages --- */
+         .flash-messages { margin-bottom: 20px; }
+         .alert { padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid transparent; font-size: 0.95em; }
+         .alert-error { color: var(--error-color); background-color: var(--flash-bg-error); border-color: var(--flash-border-error); }
+         .alert-success { color: var(--success-color); background-color: var(--flash-bg-success); border-color: var(--flash-border-success); }
+         .alert-info { color: var(--info-color); background-color: var(--flash-bg-info); border-color: var(--flash-border-info); }
+         .alert-warning { color: var(--warning-color); background-color: var(--flash-bg-warning); border-color: var(--flash-border-warning); }
+         body.dark-mode .alert-error { color: #ffaaaa; }
+         body.dark-mode .alert-success { color: #aaffaa; }
+         body.dark-mode .alert-info { color: #aae0ff; }
+         body.dark-mode .alert-warning { color: #fff0aa; }
+
+        /* --- User Welcome Element --- */
+        .welcome-text {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-right: 15px;
+        }
+        
+        /* --- Dashboard Components --- */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; margin-bottom: 30px; }
+        .dashboard-card { background-color: var(--card-bg); border-radius: 10px; box-shadow: 0 5px 15px var(--shadow-color); padding: 25px; transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease; border: 1px solid var(--border-color); }
+        .dashboard-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px var(--shadow-color); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .card-title { font-size: 1.1em; font-weight: 600; color: var(--text-primary); }
+        .card-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background-color: var(--accent-gold); color: var(--accent-black); font-size: 1.2em; }
+        .card-content { margin-bottom: 15px; }
+        .stat-value { font-size: 2.2em; font-weight: 700; margin-bottom: 5px; color: var(--text-primary); }
+        .stat-label { color: var(--text-secondary); font-size: 0.9em; }
+        .progress-container { height: 8px; background-color: var(--bg-secondary); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+         body.dark-mode .progress-container { background-color: #444; }
+        .progress-bar { height: 100%; background-color: var(--accent-red); border-radius: 4px; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; color: var(--text-secondary); }
+        .trend { display: flex; align-items: center; }
+        .trend-up { color: var(--success-color); }
+        .trend-down { color: var(--error-color); }
+        .trend i { margin-right: 5px; }
+
+        /* --- Skill Styling --- */
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+            font-size: 0.9em;
+        }
+        .chatbot-frame-container {
+            margin-top: 20px;
+            height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .chatbot-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        /* --- Progress Module Specific Styles --- */
+        /* Make specific widget headings gold */
+        .progress-widget > h3,
+        .detailed-progress-view > h3 { 
+            color: var(--accent-gold);
+            font-size: 1.3rem;
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 20px;
+        }
+        .progress-widget > h3 i,
+        .detailed-progress-view > h3 i {
+            color: var(--accent-gold);
+            margin-right: 8px;
+        }
+
+        .progress-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-bottom: 20px; }
+        .progress-bar-container { width: 100%; background-color: var(--bg-secondary); border-radius: 10px; height: 12px; overflow: hidden; margin-top: 5px; margin-bottom: 15px; transition: background-color 0.3s ease; }
+        .progress-bar { height: 100%; border-radius: 10px; transition: width 0.5s ease-in-out; background-color: var(--accent-gold); }
+        .progress-goal .progress-bar { background-color: var(--success-color); }
+        .progress-deadline .progress-bar { background-color: var(--accent-red); }
+
+        .goal-item, .skill-item { margin-bottom: 15px; }
+        .goal-item span, .skill-item span { display: block; color: var(--text-primary); margin-bottom: 3px; font-size: 0.95rem; font-weight: 500; }
+        .goal-item h4, .skill-item h4 { color: var(--text-primary); margin-bottom: 15px; font-size: 1.1rem; display: flex; align-items: center; }
+        .goal-item h4 i, .skill-item h4 i { margin-right: 8px; color: var(--accent-red); }
+
+        .chart-container { position: relative; height: 280px; width: 100%; margin-bottom: 20px; padding: 20px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--card-bg); transition: background-color 0.3s ease, border-color 0.3s ease; }
+        .chart-container h4 { margin-bottom: 15px; }
+
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: var(--card-bg); box-shadow: 0 1px 5px var(--shadow-color); border-radius: 8px; overflow: hidden; transition: background-color 0.3s ease; }
+        .data-table th, .data-table td { border-bottom: 1px solid var(--border-color); padding: 12px 15px; text-align: left; transition: border-color 0.3s ease; }
+        .data-table th { background-color: var(--bg-secondary); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); transition: background-color 0.3s ease, color 0.3s ease; }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table tbody tr:hover { background-color: rgba(255, 215, 0, 0.08); }
+        body.dark-mode .data-table tbody tr:hover { background-color: rgba(255, 215, 0, 0.1); }
+        .data-table .status-completed { color: var(--success-color); font-weight: 500; }
+        .data-table .status-pending { color: var(--accent-red); font-style: italic; }
+        .data-table .status-watched { color: var(--text-secondary); }
+        
+        .btn-filter {
+             background-color: var(--card-bg); color: var(--text-secondary);
+             border: 1px solid var(--border-color); padding: 8px 15px;
+             border-radius: 15px; font-size: 0.9rem; margin-right: 10px;
+             transition: all 0.2s ease;
+         }
+         .btn-filter:hover { border-color: var(--accent-gold); color: var(--accent-gold); background-color: var(--card-bg); }
+         .btn-filter i { margin-right: 5px; }
+
+        /* --- Responsive --- */
+        @media (max-width: 992px) { .main-content { margin-left: 0; } .sidebar { transform: translateX(-100%); position: absolute;} }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } .header { padding: 0 15px; } .header-title { font-size: 1.2em; } .activity-item { flex-wrap: wrap; } .activity-action { margin-left: 0; width: 100%; text-align: right; padding-top: 10px;} }
+        @media (max-width: 576px) { .header-actions > * { margin-left: 10px; } .content { padding: 20px; } .dashboard-card { padding: 20px; } .stat-value { font-size: 1.8em; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-icon" title="EnginSync Logo">
+                    <img src="{{ url_for('static', filename='img/ESCN.jpg') }}" alt="RCB Logo" class="rcb-logo">
+                </div>
+                <span class="sidebar-logo-text">Pathsy</span>
+            </div>
+            <nav class="sidebar-nav">
+                 <a href="{{ url_for('dashboard') }}" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('planner') }}" class="nav-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Planner</span>
+                </a>
+                <a href="{{ url_for('jobsearch') }}" class="nav-item">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Job Search</span>
+                </a>
+                <a href="{{ url_for('textbot') }}" class="nav-item">
+                    <i class="fas fa-robot"></i>
+                    <span>Textbook Bot</span>
+                </a>
+                <a href="{{ url_for('ai_planner') }}" class="nav-item">
+                    <i class="fas fa-brain"></i>
+                    <span>Career GPS</span>
+                </a>
+                <a href="{{ url_for('interview_prep') }}" class="nav-item">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Interview Prep</span>
+                </a>
+                <a href="{{ url_for('practice') }}" class="nav-item">
+                    <i class="fas fa-code"></i>
+                    <span>DSA Practice</span>
+                </a>
+                <a href="https://app.lapentor.com/sphere/rvce-1740812282" class="nav-item" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-vr-cardboard"></i>
+                    <span>AR Tour</span>
+                    </a>
+                
+                
+            </nav>
+            <div class="sidebar-footer">
+                {% if g.user %}
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {% set name_parts = g.user.full_name.split(' ') %}
+                        {% if name_parts|length > 0 %}
+                            {{ name_parts[0][0]|upper }}{% if name_parts|length > 1 %}{{ name_parts[-1][0]|upper }}{% endif %}
+                        {% else %}
+                            U
+                        {% endif %}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ g.user.full_name }}</div>
+                     </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+                {% else %}
+                 <div class="user-info">
+                     <div class="user-avatar">?</div>
+                     <div class="user-details">
+                         <div class="user-name">Not Logged In</div>
+                     </div>
+                 </div>
+                 <a href="{{ url_for('login') }}" class="btn btn-primary logout-btn">
+                     <i class="fas fa-sign-in-alt"></i> Login
+                 </a>
+                {% endif %}
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                 <div class="header-title">Dashboard</div>
+                <div class="header-actions">
+                    <span class="welcome-text">Welcome, {{ full_name.split(' ')[0] }}</span>
+                    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                        </button>
+                </div>
+            </header>
+
+            <div class="content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                        {% for category, message in messages %}
+                            {% set alert_class = 'alert-info' %} {% if category == 'error' %}
+                                {% set alert_class = 'alert-error' %}
+                            {% elif category == 'success' %}
+                                {% set alert_class = 'alert-success' %}
+                            {% elif category == 'warning' %}
+                                {% set alert_class = 'alert-warning' %}
+                            {% endif %}
+                            <div class="alert {{ alert_class }}">{{ message }}</div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="dashboard-grid">
+                     <div class="dashboard-card"> <div class="card-header"> <div class="card-title">Learning Stats</div> <div class="card-icon"><i class="fas fa-graduation-cap"></i></div> </div> <div class="card-content"> <div class="stat-grid"> <div class="stat-item"> <div class="stat-value"> 3</div> <div class="stat-label">Exercises</div> </div> <div class="stat-item"> <div class="stat-value">{{ streak }}</div> <div class="stat-label">Streak</div> </div> </div> </div> </div>
+                     <div class="dashboard-card"> <div class="card-header"> <div class="card-title">Progress Stats</div> <div class="card-icon"><i class="fas fa-chart-line"></i></div> </div> <div class="card-content"> <div class="stat-value">{{ overall_progress|round(1) }}%</div> <div class="stat-label">Overall Completion</div> </div> <div class="card-footer"> <div class="trend up"><i class="fas fa-arrow-up"></i> <span>5% this week</span></div> </div> </div>
+                     <div class="dashboard-card"> <div class="card-header"> <div class="card-title">Textbook Bot</div> <div class="card-icon"><i class="fas fa-robot"></i></div> </div> <div class="card-content"> <div class="stat-value">3</div> <div class="stat-label">Textbooks Uploaded</div> </div> <div class="card-footer"> <div class="trend"><span>12 chat sessions</span></div> <a href="{{ url_for('textbot') }}">Open Bot</a> </div> </div>
+                </div>
+
+                <!-- Progress Module Card -->
+                <div id="progress-section" class="dashboard-card">
+                    <h3><i class="fas fa-tasks"></i> Your Progress</h3>
+                    
+                    <div class="widget-card progress-widget">
+                        <h3><i class="fas fa-tachometer-alt"></i> Progress Snapshot</h3>
+                        <div class="progress-grid">
+                            <div class="skill-item">
+                                <h4><i class="fas fa-star"></i> Skill Mastery</h4>
+                                <div class="chart-container" style="height: 240px;">
+                                    <canvas id="skillMasteryChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="goal-item">
+                                <h4><i class="fas fa-bullseye"></i> Current Goals & Deadlines</h4>
+                                {% for goal in goals %}
+                                <div class="{% if goal.deadline and goal.deadline < now %}progress-deadline{% else %}progress-goal{% endif %}">
+                                    <span>{{ goal.title }}</span>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar" style="width: {{ goal.progress_percentage }}%;"></div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detailed-progress-view">
+                        <h3><i class="fas fa-search-plus"></i> Detailed Analysis</h3>
+                        <div style="margin-bottom: 20px;">
+                            <button class="btn-filter"><i class="fas fa-filter"></i> Course: All</button>
+                            <button class="btn-filter"><i class="far fa-calendar-alt"></i> Time: Last 30 Days</button>
+                        </div>
+                        <div class="progress-grid">
+                            <div class="chart-container">
+                                <h4>Progress Over Time <small>(Activities Completed)</small></h4>
+                                <canvas id="progressOverTimeChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h4>Assignment Completion Rate (%)</h4>
+                                <canvas id="completionRateChart"></canvas>
+                            </div>
+                        </div>
+                        
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div class="chatbot-frame-container">
+        <div id="chatbot-container"></div>
+    </div>
+    <script src="https://cdn.botpress.cloud/webchat/v2.2/inject.js"></script>
+    <script src="https://files.bpcontent.cloud/2025/01/24/06/20250124064229-QQTR4PBG.js"></script>
+    <script>
+        // --- Theme Toggle Functionality ---
+        const body = document.body;
+        const themeToggleButton = document.getElementById('theme-toggle');
+
+        function setTheme(theme) {
+            localStorage.setItem('theme', theme); // Store preference
+             if (theme === 'dark') {
+                 body.classList.add('dark-mode');
+                 body.classList.remove('light-mode');
+                 if(themeToggleButton) themeToggleButton.innerHTML = '☀'; // Sun emoji for dark mode
+                 if(themeToggleButton) themeToggleButton.setAttribute('title', 'Switch to light mode');
+             } else {
+                 body.classList.add('light-mode');
+                 body.classList.remove('dark-mode');
+                 if(themeToggleButton) themeToggleButton.innerHTML = '🌙'; // Moon emoji for light mode
+                 if(themeToggleButton) themeToggleButton.setAttribute('title', 'Switch to dark mode');
+             }
+         }
+
+         // Check for saved theme preference or use device preference
+         const savedTheme = localStorage.getItem('theme');
+         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+         let initialTheme = 'light'; // Default to light
+         if (savedTheme) {
+             initialTheme = savedTheme;
+         } else if (prefersDark) {
+             initialTheme = 'dark';
+         }
+         // Apply initial theme class before DOMContentLoaded listener
+         if (initialTheme === 'dark') {
+             body.classList.add('dark-mode');
+             body.classList.remove('light-mode');
+         } else {
+             body.classList.add('light-mode');
+             body.classList.remove('dark-mode');
+         }
+         // Set initial emoji
+         if(themeToggleButton) {
+             themeToggleButton.innerHTML = initialTheme === 'dark' ? '☀' : '🌙';
+             themeToggleButton.setAttribute('title', initialTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+         }
+
+         // Add click listener for the toggle button
+         if (themeToggleButton) {
+             themeToggleButton.addEventListener('click', () => {
+                 const newTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
+                 setTheme(newTheme);
+             });
+         }
+         
+         // Make welcome message disappear after a few seconds
+         document.addEventListener('DOMContentLoaded', function() {
+            const welcomeText = document.querySelector('.welcome-text');
+            if (welcomeText) {
+                setTimeout(function() {
+                    welcomeText.style.transition = 'opacity 1s ease-out';
+                    welcomeText.style.opacity = '0';
+                    setTimeout(function() {
+                        welcomeText.style.display = 'none';
+                    }, 1000);
+                }, 3000); // Display for 3 seconds before fading out
+            }
+         });
+
+         // Update header title based on active nav item (server-side preferred)
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeNavItem = document.querySelector('.sidebar-nav .nav-item.active span');
+            const headerTitle = document.querySelector('.header-title');
+            if (activeNavItem && headerTitle) {
+                headerTitle.textContent = activeNavItem.textContent;
+            } else if (headerTitle) {
+                // Fallback if no active item found (e.g., direct URL access)
+                const path = window.location.pathname.split('/').pop().replace('.html','');
+                if (path === 'dashboard' || path === '') headerTitle.textContent = 'Dashboard';
+                else if (path) headerTitle.textContent = path.charAt(0).toUpperCase() + path.slice(1); // Capitalize path name
+                else headerTitle.textContent = 'EnginSync'; // Default
+            }
+        });
+
+    </script>
+    
+    <!-- Chart Initialization Code -->
+    <script>
+        // Chart Instances (global scope for re-rendering)
+        let skillChartInstance = null;
+        let progressChartInstance = null;
+        let completionChartInstance = null;
+
+        // Function to get current theme colors for charts
+        function getChartThemeColors() {
+            const computedStyle = getComputedStyle(document.documentElement);
+            const getColor = (varName, fallback) => computedStyle.getPropertyValue(varName).trim() || fallback;
+            return {
+                primaryText: getColor('--text-primary', '#111'),
+                secondaryText: getColor('--text-secondary', '#555'),
+                gridColor: getColor('--chart-grid-color', 'rgba(0,0,0,0.08)'),
+                accentRed: getColor('--accent-red', '#D81B27'),
+                accentGold: getColor('--accent-gold', '#FFC72C'),
+                successColor: getColor('--success-color', '#28a745'),
+                cardBg: getColor('--card-bg', '#ffffff')
+            };
+        }
+
+        // Chart Initialization / Re-initialization Function
+        function initializeCharts() {
+            const themeColors = getChartThemeColors();
+
+            if (skillChartInstance) skillChartInstance.destroy();
+            if (progressChartInstance) progressChartInstance.destroy();
+            if (completionChartInstance) completionChartInstance.destroy();
+            skillChartInstance = null; progressChartInstance = null; completionChartInstance = null;
+
+            // --- Real Skill Data from Database ---
+            const skillMasteryData = {
+                labels: [{% for skill in skills %}"{{ skill.name }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+                datasets: [{
+                    label: 'Current Mastery',
+                    data: [{% for skill in skills %}{{ skill.proficiency_level }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                    backgroundColor: themeColors.accentRed + '4D', // RED transparent (~30%)
+                    borderColor: themeColors.accentRed, // RED solid
+                    borderWidth: 2,
+                    pointBackgroundColor: themeColors.accentRed,
+                    pointBorderColor: themeColors.cardBg,
+                    pointHoverBackgroundColor: themeColors.cardBg,
+                    pointHoverBorderColor: themeColors.accentRed
+                }]
+            };
+
+            // --- Weekly Progress Data ---
+            const progressOverTimeData = {
+                labels: [{% for week in weekly_progress %}"{{ week.week }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+                datasets: [{
+                    label: 'Activities Completed',
+                    data: [{% for week in weekly_progress %}{{ week.count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                    fill: false,
+                    borderColor: themeColors.accentRed, // Red line
+                    tension: 0.1,
+                    pointBackgroundColor: themeColors.accentRed,
+                    pointBorderColor: themeColors.cardBg,
+                    pointHoverBackgroundColor: themeColors.cardBg,
+                    pointHoverBorderColor: themeColors.accentRed,
+                }]
+            };
+
+            // --- Assignment Completion Data ---
+            const completionRateData = {
+                labels: [{% for assignment in assignments %}"{{ assignment.description[:10] }}..."{% if not loop.last %}, {% endif %}{% endfor %}],
+                datasets: [{
+                    label: 'Score (%)',
+                    data: [{% for assignment in assignments %}{{ assignment.score if assignment.score else "null" }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                    backgroundColor: [
+                        {% for assignment in assignments %}
+                        {% if assignment.score and assignment.score > 85 %}themeColors.successColor + 'B3'{% else %}themeColors.accentRed + 'B3'{% endif %}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    ],
+                    borderColor: [
+                        {% for assignment in assignments %}
+                        {% if assignment.score and assignment.score > 85 %}themeColors.successColor{% else %}themeColors.accentRed{% endif %}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    ],
+                    borderWidth: 1, borderRadius: 4,
+                }]
+            };
+
+            // --- Chart Configurations ---
+            const ctxSkill = document.getElementById('skillMasteryChart');
+            if (ctxSkill) {
+                 skillChartInstance = new Chart(ctxSkill, {
+                    type: 'radar', data: skillMasteryData,
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { r: { angleLines: { color: themeColors.gridColor }, grid: { color: themeColors.gridColor }, pointLabels: { color: themeColors.secondaryText, font: { size: 11 } }, suggestedMin: 0, suggestedMax: 100, ticks: { color: themeColors.secondaryText, backdropColor: 'transparent' } } } } });
+            }
+
+            const ctxProgress = document.getElementById('progressOverTimeChart');
+             if (ctxProgress) {
+                  progressChartInstance = new Chart(ctxProgress, {
+                    type: 'line', data: progressOverTimeData,
+                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, suggestedMax: 20, grid: { color: themeColors.gridColor }, ticks: { color: themeColors.secondaryText } }, x: { grid: { display: false }, ticks: { color: themeColors.secondaryText } } } } });
+             }
+
+             const ctxCompletion = document.getElementById('completionRateChart');
+             if (ctxCompletion) {
+                 completionChartInstance = new Chart(ctxCompletion, {
+                    type: 'bar', data: completionRateData,
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, suggestedMax: 100, grid: { color: themeColors.gridColor }, ticks: { color: themeColors.secondaryText, callback: function(value) { return value + '%' } } }, x: { grid: { display: false }, ticks: { color: themeColors.secondaryText } } } } });
+            }
+        }
+        
+        // Initialize charts when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeCharts();
+        });
+        
+        // Re-initialize charts when theme is changed
+        document.addEventListener('themeChanged', () => {
+            setTimeout(initializeCharts, 50);
+        });
+    </script>
+</body>
+</html>
