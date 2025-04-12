@@ -1,4 +1,5 @@
 Career Development Platform
+
 This platform is designed to assist students and professionals in navigating their career paths by offering a suite of tools that support skill development, job readiness, and progress tracking. The application provides personalized resources, interactive learning experiences, and intelligent insights based on user profiles.
 
 Features
