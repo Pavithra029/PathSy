@@ -57,6 +57,6 @@ AI/ML: Optional use of OpenAI or other models for resume parsing, question gener
 
 
 
-How to use
-clone the repository
+How to use ---
+clone the repository---
 Run app.py
