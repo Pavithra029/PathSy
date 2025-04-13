@@ -42,11 +42,12 @@ The platform returns a curated list of relevant videos from public sources
 Supports quick learning and revision of unfamiliar topics
 
 Technology Stack
+
 Frontend: React.js, Tailwind CSS
 
-Backend: Node.js / Express or Python / Flask (based on deployment)
+Backend: Flask 
 
-Authentication: Bcrypt / JWT for secure password handling and session management
+Authentication: Werkzeug for password hashing and security
 
 Database: PostgreSQL (for user data and activity tracking)
 
