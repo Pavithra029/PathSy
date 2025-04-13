@@ -43,7 +43,7 @@ Supports quick learning and revision of unfamiliar topics
 
 Technology Stack
 
-Frontend: React.js, Tailwind CSS
+Frontend: HTML, Tailwind CSS
 
 Backend: Flask 
 
